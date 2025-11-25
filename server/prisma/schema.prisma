@@ -1,0 +1,113 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            Int            @id @default(autoincrement())
+  email         String         @unique
+  password      String
+  name          String?
+  role          String         @default("USER")
+  provider      String?        @default("LOCAL")
+  orders        Order[]
+  cartItems     CartItem[]
+  conversations Conversation[]
+  messages      Message[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model Category {
+  id        Int       @id @default(autoincrement())
+  name      String
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Product {
+  id           Int        @id @default(autoincrement())
+  name         String
+  description  String
+  price        Float
+  brand        String?
+  power        Float?
+  image        String?
+  categoryId   Int
+  category     Category   @relation(fields: [categoryId], references: [id])
+  orderItems   OrderItem[]
+  cartItems    CartItem[]
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+}
+
+model CartItem {
+  userId    Int
+  productId Int
+  quantity  Int
+  user      User    @relation(fields: [userId], references: [id])
+  product   Product @relation(fields: [productId], references: [id])
+  @@id([userId, productId])
+  @@unique([userId, productId], name: "userId_productId")
+}
+
+model Order {
+  id        Int         @id @default(autoincrement())
+  userId    Int
+  total     Float
+  status    String
+  user      User        @relation(fields: [userId], references: [id])
+  items     OrderItem[]
+  payment   Payment?
+  paymentId Int?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+}
+
+model OrderItem {
+  id        Int     @id @default(autoincrement())
+  orderId   Int
+  productId Int
+  quantity  Int
+  price     Float
+  order     Order   @relation(fields: [orderId], references: [id])
+  product   Product @relation(fields: [productId], references: [id])
+}
+
+model Payment {
+  id         Int      @id @default(autoincrement())
+  orderId    Int
+  provider   String
+  status     String
+  externalId String?
+  qrUrl      String?
+  order      Order    @relation(fields: [orderId], references: [id])
+}
+
+model Conversation {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  type      String
+  user      User      @relation(fields: [userId], references: [id])
+  messages  Message[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Message {
+  id             Int      @id @default(autoincrement())
+  conversationId Int
+  userId         Int?
+  adminId        Int?
+  senderType     String
+  type           String
+  content        String
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+  user           User?       @relation(fields: [userId], references: [id])
+  createdAt      DateTime @default(now())
+}
